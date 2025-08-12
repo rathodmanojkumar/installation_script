@@ -8,7 +8,6 @@ log() {
 }
 
 DRIVER_URL="https://raw.githubusercontent.com/rathodmanojkumar/Storage_Files/main/linux-UFRII-drv-v610-m17n-03.tar.gz"
-TARGET_DIR="$HOME/linux-UFRII-drv-v610-m17n-03"
 TAR_NAME="linux-UFRII-drv-v610-m17n-03.tar.gz"
 PRINTER_NAME="Canon_LBP246dw"
 
@@ -28,18 +27,32 @@ sudo systemctl start cups
 log "⬇ Downloading Canon driver..."
 wget -q --show-progress -O "$TAR_NAME" "$DRIVER_URL" 2>&1 | tee -a "$LOGFILE"
 
-# 4. Extract driver
+# 4. Extract driver into $HOME
 log "📂 Extracting driver package..."
-mkdir -p "$TARGET_DIR"
-tar -xzf "$TAR_NAME" -C "$(dirname "$TARGET_DIR")" | tee -a "$LOGFILE"
+tar -xzf "$TAR_NAME" -C "$HOME" | tee -a "$LOGFILE"
 
-# 5. Install driver via Canon's install.sh with full permissions
+# 5. Detect extracted folder automatically
+TARGET_DIR=$(find "$HOME" -maxdepth 1 -type d -name "linux-UFRII-drv-*" | head -n 1)
+
+if [ -z "$TARGET_DIR" ]; then
+    log "❌ Could not find extracted Canon driver folder in $HOME"
+    exit 1
+fi
+log "📂 Found driver folder: $TARGET_DIR"
+
+# 6. Check install.sh exists
+if [ ! -f "$TARGET_DIR/install.sh" ]; then
+    log "❌ install.sh not found in $TARGET_DIR"
+    exit 1
+fi
+
+# 7. Install driver via Canon's install.sh with full permissions
 log "⚙ Giving full permissions to Canon install.sh..."
 chmod 777 "$TARGET_DIR/install.sh"
 log "⚙ Running Canon install.sh..."
 ( cd "$TARGET_DIR" && sudo ./install.sh ) | tee -a "$LOGFILE"
 
-# 6. Detect printer on network or USB
+# 8. Detect printer on network or USB
 log "🔍 Detecting Canon printer..."
 PRINTER_URI=$(lpinfo -v | grep -i 'Canon' | grep -i 'LBP' | head -n 1 | awk '{print $2}')
 
@@ -52,11 +65,11 @@ else
     log "⚠ No Canon LBP printer detected automatically — you may need to add it manually."
 fi
 
-# 7. Restart CUPS so printer shows in settings
+# 9. Restart CUPS so printer shows in settings
 log "🔄 Restarting CUPS..."
 sudo systemctl restart cups
 
-# 8. Open Printer Settings (GNOME/KDE)
+# 10. Open Printer Settings (GNOME/KDE)
 if command -v gnome-control-center &> /dev/null; then
     log "📂 Opening GNOME Printer Settings..."
     nohup gnome-control-center printers >/dev/null 2>&1 &
