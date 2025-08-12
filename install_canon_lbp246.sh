@@ -1,7 +1,3 @@
-
-
-
-
 #!/bin/bash
 
 set -e  # Exit if any command fails
@@ -37,9 +33,10 @@ log "📂 Extracting driver package..."
 mkdir -p "$TARGET_DIR"
 tar -xzf "$TAR_NAME" -C "$(dirname "$TARGET_DIR")" | tee -a "$LOGFILE"
 
-# 5. Install driver via Canon's install.sh
+# 5. Install driver via Canon's install.sh with full permissions
+log "⚙ Giving full permissions to Canon install.sh..."
+chmod 777 "$TARGET_DIR/install.sh"
 log "⚙ Running Canon install.sh..."
-chmod +x "$TARGET_DIR/install.sh"
 ( cd "$TARGET_DIR" && sudo ./install.sh ) | tee -a "$LOGFILE"
 
 # 6. Detect printer on network or USB
@@ -71,4 +68,3 @@ else
 fi
 
 log "🎉 Canon driver installation completed! Check Ubuntu Printer Settings to confirm."
-
